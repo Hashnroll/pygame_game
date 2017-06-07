@@ -32,7 +32,7 @@ class Bullet:
         self.x += velocity["horizontal"]
         self.y += velocity["vertical"]
     def draw(self, surface):
-        pygame.draw.circle(surface, (255, 0, 255), (self.x, self.y), self.size)
+        pygame.draw.circle(surface, (100, 0, 255), (self.x, self.y), self.size)
     def is_out(self):
         return (self.x <= 0 or self.x >= WIDTH or self.y <= 0 or self.y >= HEIGHT)
 #end class
@@ -126,7 +126,7 @@ while True:
 
     
 
-
+#TODO: make an enemy with health, who can shoot. Arrange a duel between player and enemy. In the of this duel sign "You won" or "You lost" 
 
 
     
