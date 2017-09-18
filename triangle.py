@@ -38,7 +38,7 @@ def playAgain():
     else:
         return False
     
-#start class
+#start Bullet class
 class Bullet(pygame.sprite.Sprite):
     size = 10
     def __init__(self, Tx, Ty, player):
@@ -50,7 +50,7 @@ class Bullet(pygame.sprite.Sprite):
         self.rect.center = (Tx, Ty)
 
         self.player = player
-        
+
     def move(self):
         if self.player:
             self.rect.centerx += PLAYER_BULLET_VELOCITY
@@ -68,7 +68,7 @@ class Bullet(pygame.sprite.Sprite):
             return False
 #end class
 
-#start class
+#start Triangle(game subject) class
 class Triangle(pygame.sprite.Sprite):
     def __init__(self, startpos = (round(WIDTH/2), round(HEIGHT/2)), radius = 30, player = False):
         pygame.sprite.Sprite.__init__(self)
@@ -88,10 +88,7 @@ class Triangle(pygame.sprite.Sprite):
         self.health = MAX_HEALTH
 
         self.player = player #принадлежность
-        
-    def rotate(self, Phi):
-        self.angles = [(t + Phi) for t in self.angles]
-        self.angles = [(t - 2*math.pi) if t > 2*math.pi else t for t in self.angles]
+
     def move(self, direction):
         if direction == "left":
             self.rect.centerx-=1
@@ -165,10 +162,10 @@ def drawHealthBars(playerHealth, enemyHealth):
     enemyHealthCurrent.fill(GREEN)
   
     playerHealthFull.blit(playerHealthCurrent, (0,0))
-    enemyHealthFull.blit(enemyHealthCurrent, (0, 0))
+    enemyHealthFull.blit(enemyHealthCurrent, (0,0))
     
-    windowSurface.blit(playerHealthFull, (20, 20))
-    windowSurface.blit(enemyHealthFull, (WIDTH-(MAX_HEALTH+20), 20))
+    windowSurface.blit(playerHealthFull, (20,20))
+    windowSurface.blit(enemyHealthFull, (WIDTH-(MAX_HEALTH+20),20))
 
     
 gameLoop = True
@@ -195,10 +192,6 @@ while gameLoop:
         T.move("up")
     if keys[K_s]:
         T.move("bottom")
-    """if keys[K_q]:
-        T.rotate(-(1/100)*math.pi)
-    if keys[K_r]:
-        T.rotate((1/100)*math.pi)"""
 
     if (enemy_shoot_latency > 0):
         enemy_shoot_latency -= 1
@@ -235,5 +228,4 @@ while gameLoop:
 sys.exit()
 
     
-
 
