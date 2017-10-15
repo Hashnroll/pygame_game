@@ -93,6 +93,16 @@ class Entity(pygame.sprite.Sprite):
                 self.bulletsGroup.remove(b)
         EntityGroup.add(self)
 
+    def move(self, direction, velocity = 1):
+        if direction == "left":
+            self.rect.centerx -= velocity
+        if direction == "right":
+            self.rect.centerx += velocity
+        if direction == "bottom":
+            self.rect.centery += velocity
+        if direction == "up":
+            self.rect.centery -= velocity
+
     def death(self, image):
         width = self.rect.width
         height = self.rect.height
@@ -116,16 +126,6 @@ class Player(Entity):
         self.rect = self.image.get_rect()
 
         self.rect.center = (100, 100)
-        
-    def move(self, direction):
-        if direction == "left":
-            self.rect.centerx-=1
-        if direction == "right":
-            self.rect.centerx+=1
-        if direction == "bottom":
-            self.rect.centery+=1
-        if direction == "up":
-            self.rect.centery-=1
 
     def shoot(self):
         b = Bullet(self.rect.centerx, self.rect.centery, 2)
@@ -158,6 +158,9 @@ FPS = 120
 ENEMY_SHOOT_PERIOD = 100
 enemy_shoot_latency = ENEMY_SHOOT_PERIOD
 
+ENEMY_ADDITION_FREQUENCY = 50
+enemy_addition_latency = ENEMY_ADDITION_FREQUENCY
+
 #set up font
 font = pygame.font.SysFont(None, 48)
 
@@ -172,48 +175,43 @@ def waitForPlayerToPressKey():
                 return
 
 def drawText(text, font, surface, x, y):
-    textobj = font.render(text, 1, (255,255,255))
+    textobj = font.render(text, 1, (255, 255, 255))
     textrect = textobj.get_rect()
     textrect.topleft = (x, y)
     surface.blit(textobj, textrect)
 
+def drawScore(text, font, surface, x, y):
+    textobj = font.render(text, 1, (0, 0, 0))
+    textrect = textobj.get_rect()
+    textrect.topleft = (x, y)
+    surface.blit(textobj, textrect)
+    
 #start init game objects
+EntityGroup = pygame.sprite.Group()
+
 def start_init():
     global player
     player = Player()
-    global enemy
-    enemy = Enemy((WIDTH-100, round(HEIGHT/2)))
     EntityGroup.add(player)
-    EntityGroup.add(enemy)
-
-EntityGroup = pygame.sprite.Group()
-
 #end init
 
 def terminate():
     pygame.quit()
     sys.exit()
 
-def drawHealthBars(playerHealth, enemyHealth):
+def drawHealthBar(playerHealth):
     playerHealthFull = pygame.Surface((MAX_HEALTH, 50))
-    enemyHealthFull = pygame.Surface((MAX_HEALTH, 50))
-
-    playerHealthCurrent = pygame.Surface((playerHealth, 50))
-    enemyHealthCurrent = pygame.Surface((enemyHealth, 50))   
-
-    playerHealthFull.fill((255, 0, 0))
-    enemyHealthFull.fill((255, 0, 0))
-
-    playerHealthCurrent.fill((0, 255, 0))
-    enemyHealthCurrent.fill((0, 255, 0))
-  
-    playerHealthFull.blit(playerHealthCurrent, (0,0))
-    enemyHealthFull.blit(enemyHealthCurrent, (0,0))
     
+    playerHealthCurrent = pygame.Surface((playerHealth, 50))
+    
+    playerHealthFull.fill((255, 0, 0))
+    
+    playerHealthCurrent.fill((0, 255, 0))
+      
+    playerHealthFull.blit(playerHealthCurrent, (0,0))
+        
     windowSurface.blit(playerHealthFull, (20,20))
-    windowSurface.blit(enemyHealthFull, (WIDTH-(MAX_HEALTH+20),20))
-
-
+    
 drawText('Ironman', font, windowSurface, (WIDTH / 3), (HEIGHT /3))
 drawText('Press a key to start.', font, windowSurface, (WIDTH / 3) - 30, (HEIGHT / 3) + 50)
 pygame.display.update()
@@ -223,10 +221,14 @@ start_init()
 
 gameLoop = True
 
+score = 0
+
+background = pygame.image.load('background.png')
+
 while gameLoop:
     clock.tick(FPS)
-    
-    windowSurface.fill((240, 240, 240))
+
+    windowSurface.blit(background, background.get_rect())
 
     for event in pygame.event.get():
         if event.type == QUIT:
@@ -239,25 +241,28 @@ while gameLoop:
             
     
     keys = pygame.key.get_pressed()
-    if keys[K_a]:
-        player.move("left")
-    if keys[K_d]:
-        player.move("right")
-    if keys[K_w]:
-        player.move("up")
-    if keys[K_s]:
-        player.move("bottom")
 
-    if (enemy_shoot_latency > 0):
-        enemy_shoot_latency -= 1
+    velocity = 2
+    if keys[K_a]:
+        player.move("left", velocity)
+    if keys[K_d]:
+        player.move("right", velocity)
+    if keys[K_w]:
+        player.move("up", velocity)
+    if keys[K_s]:
+        player.move("bottom", velocity)
+
+    if (enemy_addition_latency > 0):
+        enemy_addition_latency -= 1
     else:
-        enemy.shoot()
-        enemy_shoot_latency = ENEMY_SHOOT_PERIOD
+        e = Enemy((random.randint(round(2*WIDTH/3), WIDTH - 50), random.randint(0, HEIGHT)))
+        EntityGroup.add(e)
+        enemy_addition_latency = ENEMY_ADDITION_FREQUENCY
     
     for sprite in EntityGroup:
         sprite.update()
 
-    drawHealthBars(player.health, enemy.health)
+    drawHealthBar(player.health)
     
     #check for health
     if player.health <= 0:
@@ -270,16 +275,25 @@ while gameLoop:
             EntityGroup.empty()
             start_init()
 
-    if enemy.health <= 0:
-        enemy.death('leviathan.png')
-        windowSurface.fill((0,0,0))
-        drawText('You won!', font, windowSurface, (WIDTH / 3), (HEIGHT /3))
-        if not playAgain():
-            gameLoop = False
+    EntityGroup.remove(player)
+
+    for enemy in EntityGroup:
+        if enemy.rect.center[0] > WIDTH or enemy.rect.center[1] < 0 or enemy.rect.center[0] < 0 or enemy.rect.center[1] > HEIGHT:
+            EntityGroup.remove(enemy)
+        elif enemy.health <= 0:
+            EntityGroup.remove(enemy)
+            score += 10
         else:
-            EntityGroup.empty()
-            start_init()    
-         
+            if (random.random() > 0.99):
+                enemy.shoot()
+            if random.random() > 0.75:
+                enemy.move(random.choice(('up', 'down')))
+            enemy.move('left')
+                
+    EntityGroup.add(player)
+
+    drawScore('Счет ' + str(score), font, windowSurface, WIDTH - 300, 20)
+    
     pygame.display.update()
 
 terminate()
